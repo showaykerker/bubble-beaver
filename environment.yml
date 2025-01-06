@@ -1,0 +1,21 @@
+name: bubble-beaver
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  - pyyaml
+  - sqlite
+  - jupyter
+  - ipykernel
+  - notebook
+  - pip:
+    - "discord.py>=2.3.2"
+    - "python-dotenv>=1.0.0"
+    - "openai>=1.3.0"
+    - "aiohttp>=3.8.0"
+    - "sqlalchemy>=2.0.0"
+    - "alembic>=1.12.0"
+    - "pydantic>=2.0.0"
+    - "tenacity>=8.2.0"
