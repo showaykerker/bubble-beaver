@@ -14,16 +14,32 @@ class Translator:
     def __init__(self, api_key: str):
         self.client = OpenAI(api_key=api_key)
 
-    async def translate(self, artist: FormattedArtist, messages: List[FormattedMessage], session: Session) -> TranslationResponse:
+    async def translate(self, artist: FormattedArtist, messages: List[FormattedMessage]) -> TranslationResponse:
 
         formatted_prompt = TRANSLATION_PROMPT.format(
             artist_name=artist.name,
             artist_prompt=artist.prompt.get('prompt', "No specific context available."),
             supported_languages=SUPPORTED_LANGUAGES,
-            messages="\n".join(messages)
         )
-        print(formatted_prompt)
         
+        response = self.client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": formatted_prompt},
+                {"role": "user", "content": "\n".join(messages)}
+            ],
+            response_format=TranslationResponse
+        )
+
+        # Should handle the following error:
+        # "message": {
+        #   "role": "assistant",
+        #   "refusal": "I'm sorry, I cannot assist with that request."
+        # } 
+
+        print(response.usage)
+        return response.choices[0].message.parsed
+
 
     # def _format_prompt(self, artist: Artist, target_lang: str) -> str:
     #     """Format prompt with artist-specific information and target language"""

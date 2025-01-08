@@ -1,10 +1,12 @@
 import discord
 from discord import app_commands
+from discord.message import Message as DCMessage
 from ..config.config import Config
 from ..translation.translator import Translator
 from ..database.session import db
 from ..models.artist import Artist, FormattedArtist
 from ..models.message import Message, RawMessage, FormattedMessage
+from ..prompts.base import TranslationResponse
 from .commands import Commands
 from .message_handler import handle_message
 from datetime import datetime, timedelta
@@ -34,8 +36,40 @@ class TranslatorBot(discord.Client):
     async def on_ready(self):
         print(f'{self.user} has connected to Discord!')
 
-    async def process_message(self, messages: list[FormattedMessage], artist: FormattedArtist, session):
-        await self.translator.translate(artist, messages, session)
+    async def process_message(self, messages: list[FormattedMessage], artist: FormattedArtist):
+        response: TranslationResponse = await self.translator.translate(artist, messages)
+
+        with db.get_session() as session:
+            for translation_of_sentence in response.translations:
+                uuid = translation_of_sentence.uuid
+                translation_to_language = translation_of_sentence.translations
+                translation_dict = dict((ttl.lang, ttl.content) for ttl in translation_to_language)
+                english_translation = translation_dict.get('English', None)
+                zh_tw_translation = translation_dict.get('#zh-TW', None)
+                
+                # send message to artist.channel_eng and artist.channel_zh_tw
+                english_channel = self.get_channel(artist.channel_eng)
+                zh_tw_channel = self.get_channel(artist.channel_zh_tw)
+                ##### Should handle if update of translation is needed #####
+                dc_msg_eng: DCMessage = await english_channel.send(english_translation)
+                dc_msg_zh_tw: DCMessage = await zh_tw_channel.send(zh_tw_translation)
+
+                # Update the message
+                message = session.query(Message).filter(Message.uuid == uuid).first()
+                if message:
+                    message.message_eng = english_translation
+                    message.message_zh_tw = zh_tw_translation
+                    message.message_eng_discord_id = dc_msg_eng.id
+                    message.message_zh_tw_discord_id = dc_msg_zh_tw.id
+                    metadata = translation_of_sentence.metadata
+                    if metadata:
+                        message.confidence = metadata.confidence
+                        message.mentioned_artists = str(metadata.mentioned_artists)
+                        message.cultural_notes = str(metadata.cultural_notes)
+                        message.korean_specific_terms = str(metadata.korean_specific_terms)
+                    message.status = 'finished'
+                    session.commit()
+
 
     async def get_previous_messages(self, artist: Artist, max_messages: int = 10, max_hours: int = 24) -> list[Message]:
         with db.get_session() as session:
@@ -109,11 +143,13 @@ class TranslatorBot(discord.Client):
 
             formatted_artist = FormattedArtist(
                 name=artist.name,
-                prompt=artist.prompt
+                prompt=artist.prompt,
+                channel_eng=artist.channel_eng,
+                channel_zh_tw=artist.channel_zh_tw
             )
 
             # Process the message
-            asyncio.create_task(self.process_message(formatted_messages, formatted_artist, session))
+            asyncio.create_task(self.process_message(formatted_messages, formatted_artist))
 
 def main():
     bot = TranslatorBot()

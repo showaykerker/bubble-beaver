@@ -7,6 +7,8 @@ from .base import Base
 class FormattedArtist(BaseModel):
     name: str
     prompt: Dict[str, Optional[str]]
+    channel_eng: Optional[int] = None
+    channel_zh_tw: Optional[int] = None
 
 
 class Artist(Base):

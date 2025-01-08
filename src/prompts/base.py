@@ -64,8 +64,6 @@ TRANSLATION_PROMPT = TranslationPrompt(
     "\t- mentioned_artists: the artists mentioned in the translation\n"
     "\t- cultural_notes: cultural notes in the translation\n"
     "\t- korean_specific_terms: korean-specific terms in the translation\n\n"
-    "==============================\n\n"
-    "{messages}\n\n"
 )
 
 SYSTEM_PROMPTS = {

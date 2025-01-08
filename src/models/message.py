@@ -2,7 +2,7 @@ import json
 from typing import Optional, Dict
 from pydantic import BaseModel
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Text, Integer, ForeignKey
+from sqlalchemy import String, Text, Float, Integer, ForeignKey
 from .base import Base
 
 class FormattedMessage(BaseModel):
@@ -33,6 +33,11 @@ class Message(Base):
 
     is_fan_message: Mapped[bool] = mapped_column(default=False)
     response_to_fan_message_uuid: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mentioned_artists: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cultural_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    korean_specific_terms: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, processing, completed, failed
     error_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
