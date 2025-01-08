@@ -1,9 +1,20 @@
-from uuid import uuid4
-from typing import Optional
+import json
+from typing import Optional, Dict
 from pydantic import BaseModel
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Text, Integer, ForeignKey
 from .base import Base
+
+class FormattedMessage(BaseModel):
+    uuid: str
+    message_orig: str
+    is_fan_message: bool
+    response_to_fan_message_uuid: Optional[str]
+    status: str
+    current_translation: Dict[str, Optional[str]]
+
+    def format(self):
+        return json.dumps(self.dict())
 
 class Message(Base):
     __tablename__ = "messages"
@@ -21,12 +32,11 @@ class Message(Base):
     message_zh_tw_discord_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     is_fan_message: Mapped[bool] = mapped_column(default=False)
-    response_to_fan_message_uuid: Mapped[Optional[str]] = mapped_column(ForeignKey("messages.uuid"), nullable=True)
+    response_to_fan_message_uuid: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, processing, completed, failed
     error_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
-            
 
 
 class RawMessage(BaseModel):

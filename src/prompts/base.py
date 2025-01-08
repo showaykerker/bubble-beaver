@@ -1,18 +1,24 @@
 from typing import List
 from pydantic import BaseModel
 
+SUPPORTED_LANGUAGES = ["English", "#zh-TW"]
+
+class TranslationMetadata(BaseModel):
+    confidence: float
+    mentioned_artists: List[str]
+    cultural_notes: List[str]
+    korean_specific_terms: List[str]
+
 class TranslateToLanguage(BaseModel):
     lang: str
     content: str
 
 class TranslationOfSentence(BaseModel):
-    original_sentence: str
-    is_from_fan: bool
+    uuid: str
+    update_previous_translation: bool
+    message_orig: str
     translations: List[TranslateToLanguage]
-    mentioned_artists: List[str]
-    cultural_notes: List[str]
-    korean_specific_terms: List[str]
-    need_more_context: bool
+    metadata: TranslationMetadata
 
 class TranslationResponse(BaseModel):
     translations: List[TranslationOfSentence]
@@ -20,6 +26,7 @@ class TranslationResponse(BaseModel):
 class BasePrompt:
     def format(self, **kwargs) -> str:
         raise NotImplementedError
+
 
 class TranslationPrompt(BasePrompt):
     def __init__(self, template: str):
@@ -30,16 +37,35 @@ class TranslationPrompt(BasePrompt):
 
 # Single translation prompt for all languages
 TRANSLATION_PROMPT = TranslationPrompt(
+    "==============================\n\n"
     "You are a skilled translator specializing in Korean idol and celebrity content. "
     "You understand the unique style and expressions of {artist_name}, a Korean artist.\n"
     "You will be given a list of messages from {artist_name} and possibly their fans. \n"
-    "If the message if from a fan, it will be started with `:` and the next line will definitely be from the artist. \n"
-    "Translate the given Korean text within the context to {target_lang} while:\n"
+    "Translate the given Korean text within the context to {supported_languages} while:\n"
     "1. Maintaining the artist's personal tone and style\n"
     "2. Preserving Korean honorifics when culturally significant\n"
     "3. Keeping emojis and emoticons where appropriate\n"
     "4. Ensuring the translation is natural in the target language\n\n"
-    "Artist-specific context: {artist_prompt}\n"
+    "==============================\n\n"
+    "Artist-specific context: {artist_prompt}\n\n"
+    "==============================\n\n"
+    "You should return message if the translation is not yet finished, "
+    "or if the translation should be updated:\n\n"
+    "Your response should provide:\n"
+    "- uuid: the given uuid of the message\n"
+    "- update_previous_translation [boolean]: whether to update the previous translation, "
+        "if current_translation is provided and not good enough\n"
+    "- message_orig: the original message\n"
+    "- translations: "
+    "\t- lang: the language of the translation\n"
+    "\t- content: the translation\n"
+    "- metadata: the metadata of the translation\n"
+    "\t- confidence: the confidence level of the translation\n"
+    "\t- mentioned_artists: the artists mentioned in the translation\n"
+    "\t- cultural_notes: cultural notes in the translation\n"
+    "\t- korean_specific_terms: korean-specific terms in the translation\n\n"
+    "==============================\n\n"
+    "{messages}\n\n"
 )
 
 SYSTEM_PROMPTS = {
@@ -84,10 +110,4 @@ SYSTEM_PROMPTS = {
         '  ]\n'
         "}"
     )
-}
-
-# Language specifications
-SUPPORTED_LANGUAGES = {
-    'eng': 'English',
-    'zh-tw': '#zh-tw'
 }

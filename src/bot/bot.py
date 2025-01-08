@@ -1,10 +1,10 @@
 import discord
 from discord import app_commands
 from ..config.config import Config
-# from ..translation.translator import Translator
+from ..translation.translator import Translator
 from ..database.session import db
-from ..models.artist import Artist
-from ..models.message import Message, RawMessage
+from ..models.artist import Artist, FormattedArtist
+from ..models.message import Message, RawMessage, FormattedMessage
 from .commands import Commands
 from .message_handler import handle_message
 from datetime import datetime, timedelta
@@ -19,7 +19,7 @@ class TranslatorBot(discord.Client):
         super().__init__(intents=intents)
         
         self.config = Config()
-        # self.translator = Translator(self.config.openai_api_key)
+        self.translator = Translator(self.config.openai_api_key)
         self.tree = app_commands.CommandTree(self)
         self.commands = Commands(self)
 
@@ -34,8 +34,8 @@ class TranslatorBot(discord.Client):
     async def on_ready(self):
         print(f'{self.user} has connected to Discord!')
 
-    async def process_message(self, messages: list[Message], artist: Artist, session):
-        pass
+    async def process_message(self, messages: list[FormattedMessage], artist: FormattedArtist, session):
+        await self.translator.translate(artist, messages, session)
 
     async def get_previous_messages(self, artist: Artist, max_messages: int = 10, max_hours: int = 24) -> list[Message]:
         with db.get_session() as session:
@@ -81,6 +81,7 @@ class TranslatorBot(discord.Client):
                     session.add(message)
                     session.commit()
                 message = Message(
+                    uuid=str(uuid4().int >> 64),
                     artist_id=artist.id,
                     message_orig=raw_message.artist_message,
                     message_orig_discord_id=discord_message.id,
@@ -93,8 +94,26 @@ class TranslatorBot(discord.Client):
                 session.commit()
                 responsing_message_uuid = None
             
+            # First format the messages
+            formatted_messages = [FormattedMessage(
+                uuid=m.uuid,
+                message_orig=m.message_orig,
+                is_fan_message=m.is_fan_message,
+                response_to_fan_message_uuid=m.response_to_fan_message_uuid,
+                status=m.status,
+                current_translation={
+                    "eng": m.message_eng,
+                    "zh_tw": m.message_zh_tw
+                }
+            ).format() for m in messages]
+
+            formatted_artist = FormattedArtist(
+                name=artist.name,
+                prompt=artist.prompt
+            )
+
             # Process the message
-            asyncio.create_task(self.process_message(messages, artist, session))
+            asyncio.create_task(self.process_message(formatted_messages, formatted_artist, session))
 
 def main():
     bot = TranslatorBot()

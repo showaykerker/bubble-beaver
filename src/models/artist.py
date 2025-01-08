@@ -1,7 +1,13 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, JSON
 from typing import Optional, Dict
+from pydantic import BaseModel
 from .base import Base
+
+class FormattedArtist(BaseModel):
+    name: str
+    prompt: Dict[str, Optional[str]]
+
 
 class Artist(Base):
     __tablename__ = "artists"
