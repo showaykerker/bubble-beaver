@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel
+from typing import List
+from ..models.message import RawMessage
 
 sample_messages = """
 짜파게티 먹고싶다
@@ -37,20 +37,7 @@ sample_messages = """
 웅 고마워showay🖤🍀
 """
 
-class RawMessage(BaseModel):
-    artist_message: str = ""
-    fan_message: Optional[str] = None
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        if self.fan_message:
-            return f">{self.fan_message}\n{self.artist_message}"
-        else:
-            return f"{self.artist_message}"
-
-def handle_message(message: str, user_name: str) -> List[RawMessage]:
+def handle_message(content: str, user_name: str) -> List[RawMessage]:
     """
     Every sentences from the artist will be separated by \n\n.
     It is possible that some sentences is sent by fans.
@@ -59,9 +46,9 @@ def handle_message(message: str, user_name: str) -> List[RawMessage]:
     @@@ means that the artist is mentioning all users. It should be remained.
     """
     raw_messages = []
-    message = message.replace(user_name, "@@@")
+    content = content.replace(user_name, "@@@")
     is_responsing = False
-    for msg in message.split("\n\n"):
+    for msg in content.split("\n\n"):
         msg = msg.strip()
 
         if msg.count("\n") == 1:  # a fan message followed by \n and the artist's response

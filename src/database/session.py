@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 import logging
 from ..models.base import Base
 from ..models.artist import Artist
-from ..models.message import Message, MessageContext
+from ..models.message import Message
 
 class DatabaseSession:
     def __init__(self, db_path: str = None):

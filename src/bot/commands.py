@@ -3,15 +3,13 @@ from discord import app_commands
 from typing import Dict, Optional
 from ..database.session import db
 from ..models.artist import Artist
-from ..models.message import Message, MessageContext
-from ..translation.translator import Translator
+from ..models.message import Message
 from datetime import datetime, timedelta
 import json
 
 class Commands:
-    def __init__(self, bot: discord.Client, translator: Translator):
+    def __init__(self, bot: discord.Client):
         self.bot = bot
-        self.translator = translator
 
     async def setup(self, tree: app_commands.CommandTree):
         @tree.command(name="mirror_channel", description="Create mirror channels for an artist")
