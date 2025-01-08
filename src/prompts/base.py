@@ -1,4 +1,21 @@
-from typing import Dict, Optional
+from typing import List
+from pydantic import BaseModel
+
+class TranslateToLanguage(BaseModel):
+    lang: str
+    content: str
+
+class TranslationOfSentence(BaseModel):
+    original_sentence: str
+    is_from_fan: bool
+    translations: List[TranslateToLanguage]
+    mentioned_artists: List[str]
+    cultural_notes: List[str]
+    korean_specific_terms: List[str]
+    need_more_context: bool
+
+class TranslationResponse(BaseModel):
+    translations: List[TranslationOfSentence]
 
 class BasePrompt:
     def format(self, **kwargs) -> str:
@@ -15,7 +32,9 @@ class TranslationPrompt(BasePrompt):
 TRANSLATION_PROMPT = TranslationPrompt(
     "You are a skilled translator specializing in Korean idol and celebrity content. "
     "You understand the unique style and expressions of {artist_name}, a Korean artist.\n"
-    "Translate the given Korean text to {target_lang} while:\n"
+    "You will be given a list of messages from {artist_name} and possibly their fans. \n"
+    "If the message if from a fan, it will be started with `:` and the next line will definitely be from the artist. \n"
+    "Translate the given Korean text within the context to {target_lang} while:\n"
     "1. Maintaining the artist's personal tone and style\n"
     "2. Preserving Korean honorifics when culturally significant\n"
     "3. Keeping emojis and emoticons where appropriate\n"
