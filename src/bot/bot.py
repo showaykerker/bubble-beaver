@@ -51,11 +51,12 @@ class TranslatorBot(discord.Client):
                 english_channel = self.get_channel(artist.channel_eng)
                 zh_tw_channel = self.get_channel(artist.channel_zh_tw)
                 ##### Should handle if update of translation is needed #####
-                dc_msg_eng: DCMessage = await english_channel.send(english_translation)
-                dc_msg_zh_tw: DCMessage = await zh_tw_channel.send(zh_tw_translation)
+                message = session.query(Message).filter(Message.uuid == uuid).first()
+                is_from_fan_message = message.is_fan_message
+                dc_msg_eng: DCMessage = await english_channel.send("> " + english_translation if is_from_fan_message else english_translation)
+                dc_msg_zh_tw: DCMessage = await zh_tw_channel.send("> " + zh_tw_translation if is_from_fan_message else zh_tw_translation)
 
                 # Update the message
-                message = session.query(Message).filter(Message.uuid == uuid).first()
                 if message:
                     message.message_eng = english_translation
                     message.message_zh_tw = zh_tw_translation
